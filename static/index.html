@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayRoute — Hyperswitch Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="noise-overlay"></div>
+
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-mark">PR</div>
+            <span class="logo-name">PayRoute</span>
+        </div>
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-tab="pay">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                New Payment
+            </button>
+            <button class="nav-item" data-tab="history">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Transactions
+            </button>
+            <button class="nav-item" data-tab="webhook">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Webhooks
+            </button>
+            <button class="nav-item" data-tab="health">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                Health
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="hs-badge">
+                <div class="hs-dot"></div>
+                Hyperswitch Sandbox
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <!-- NEW PAYMENT TAB -->
+        <section class="tab-panel active" id="tab-pay">
+            <div class="panel-header">
+                <h1>Create Payment Intent</h1>
+                <p>Route via Hyperswitch smart routing</p>
+            </div>
+            <div class="form-grid">
+                <div class="card form-card">
+                    <form id="payment-form">
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Amount <span class="label-hint">(lowest denomination)</span></label>
+                                <div class="input-prefix-wrap">
+                                    <span class="prefix" id="currency-prefix">₹</span>
+                                    <input type="number" id="amount" value="5000" min="100" required>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label>Currency</label>
+                                <select id="currency">
+                                    <option value="INR">INR — Indian Rupee</option>
+                                    <option value="USD">USD — US Dollar</option>
+                                    <option value="EUR">EUR — Euro</option>
+                                    <option value="GBP">GBP — British Pound</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>Customer Email</label>
+                            <input type="email" id="email" placeholder="customer@example.com" required>
+                        </div>
+                        <div class="field">
+                            <label>Payment Method</label>
+                            <div class="method-picker">
+                                <button type="button" class="method-btn active" data-method="CARD">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                                    Card
+                                </button>
+                                <button type="button" class="method-btn" data-method="UPI">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                                    UPI
+                                </button>
+                                <button type="button" class="method-btn" data-method="NETBANKING">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 10v11M12 10v11M16 10v11"/></svg>
+                                    NetBanking
+                                </button>
+                                <button type="button" class="method-btn" data-method="WALLET">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 13a1 1 0 100-2 1 1 0 000 2z"/></svg>
+                                    Wallet
+                                </button>
+                            </div>
+                        </div>
+                        <div class="idempotency-row">
+                            <label>Idempotency Key</label>
+                            <div class="idempotency-wrap">
+                                <input type="text" id="idempotency-key" readonly placeholder="Auto-generated">
+                                <button type="button" id="regen-key" title="Regenerate">↺</button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-pay" id="submit-btn">
+                            <span class="btn-text">Create Payment Intent</span>
+                            <span class="btn-loader hidden"></span>
+                        </button>
+                    </form>
+
+                    <div id="result-banner" class="result-banner hidden"></div>
+                </div>
+
+                <div class="card response-card" id="response-card">
+                    <div class="response-header">
+                        <span class="response-label">API Response</span>
+                        <span class="response-status" id="res-status"></span>
+                    </div>
+                    <pre id="response-json" class="response-json"><span class="placeholder-text">Response will appear here after payment intent creation.</span></pre>
+
+                    <div id="reconcile-section" class="reconcile-section hidden">
+                        <hr class="divider">
+                        <div class="reconcile-row">
+                            <div class="reconcile-info">
+                                <span class="reconcile-label">Order</span>
+                                <span class="reconcile-id" id="reconcile-order-id">—</span>
+                            </div>
+                            <div class="reconcile-info">
+                                <span class="reconcile-label">Status</span>
+                                <span class="status-chip" id="reconcile-status-chip">—</span>
+                            </div>
+                            <button class="btn-reconcile" id="reconcile-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                                Reconcile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TRANSACTIONS TAB -->
+        <section class="tab-panel" id="tab-history">
+            <div class="panel-header">
+                <h1>Transaction History</h1>
+                <p>All payment intents in this session</p>
+            </div>
+            <div class="card">
+                <div class="tx-toolbar">
+                    <input type="text" id="tx-search" placeholder="Search by Order ID or status…" class="tx-search">
+                    <button class="btn-icon" id="tx-clear" title="Clear history">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                        Clear
+                    </button>
+                </div>
+                <div id="tx-table-wrap">
+                    <table class="tx-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                                <th>HS Payment ID</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tx-tbody">
+                            <tr class="tx-empty-row"><td colspan="7">No transactions yet. Create a payment intent to get started.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- WEBHOOK TAB -->
+        <section class="tab-panel" id="tab-webhook">
+            <div class="panel-header">
+                <h1>Webhook Simulator</h1>
+                <p>Test webhook payloads against <code>/api/webhooks</code></p>
+            </div>
+            <div class="form-grid">
+                <div class="card form-card">
+                    <div class="field">
+                        <label>Event Type</label>
+                        <select id="wh-event-type">
+                            <option value="payment_intent.succeeded">payment_intent.succeeded</option>
+                            <option value="payment_intent.payment_failed">payment_intent.payment_failed</option>
+                            <option value="payment_intent.processing">payment_intent.processing</option>
+                            <option value="refund.succeeded">refund.succeeded</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Hyperswitch Payment ID</label>
+                        <input type="text" id="wh-payment-id" placeholder="pay_xxxxxxxxxxxxxxxx">
+                    </div>
+                    <div class="field">
+                        <label>Payload Preview</label>
+                        <pre id="wh-preview" class="wh-preview"></pre>
+                    </div>
+                    <button class="btn-pay" id="wh-send-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Send Webhook
+                    </button>
+                </div>
+                <div class="card response-card">
+                    <div class="response-header">
+                        <span class="response-label">Webhook Response</span>
+                        <span class="response-status" id="wh-res-status"></span>
+                    </div>
+                    <pre id="wh-response" class="response-json"><span class="placeholder-text">Response will appear here after sending webhook.</span></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- HEALTH TAB -->
+        <section class="tab-panel" id="tab-health">
+            <div class="panel-header">
+                <h1>Service Health</h1>
+                <p>API and dependency status</p>
+            </div>
+            <div class="health-grid">
+                <div class="card health-card" id="hc-api">
+                    <div class="health-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </div>
+                    <div class="health-info">
+                        <span class="health-name">API Server</span>
+                        <span class="health-status" id="hs-api">Checking…</span>
+                    </div>
+                    <div class="health-dot" id="hd-api"></div>
+                </div>
+                <div class="card health-card" id="hc-mongo">
+                    <div class="health-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                    </div>
+                    <div class="health-info">
+                        <span class="health-name">MongoDB</span>
+                        <span class="health-status" id="hs-mongo">Checking…</span>
+                    </div>
+                    <div class="health-dot" id="hd-mongo"></div>
+                </div>
+                <div class="card health-card" id="hc-redis">
+                    <div class="health-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="4" rx="1"/><rect x="2" y="10" width="20" height="4" rx="1"/><rect x="2" y="17" width="20" height="4" rx="1"/></svg>
+                    </div>
+                    <div class="health-info">
+                        <span class="health-name">Redis</span>
+                        <span class="health-status" id="hs-redis">Checking…</span>
+                    </div>
+                    <div class="health-dot" id="hd-redis"></div>
+                </div>
+                <div class="card health-card" id="hc-hs">
+                    <div class="health-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <div class="health-info">
+                        <span class="health-name">Hyperswitch API</span>
+                        <span class="health-status" id="hs-hyperswitch">Checking…</span>
+                    </div>
+                    <div class="health-dot" id="hd-hyperswitch"></div>
+                </div>
+            </div>
+            <div class="card" style="margin-top:20px;">
+                <button class="btn-reconcile" id="refresh-health" style="width:auto;padding:10px 24px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    Refresh
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
